@@ -60,3 +60,107 @@ SELECT Count(Distinct(Department)) as Distinct_Department FROM dbo.[Employees]
 
 SELECT Distinct(Department) as Distinct_Department FROM dbo.[Employees] 
 
+
+--- Common table Expressions: 
+
+-- 11 . Write a CTE to find employees who have been in the company for more than 10 years and earn above the average salary.
+
+With Employee_CTE AS ( Select EmployeeNumber, Age, Department, YearsAtCompany, MonthlyIncome
+from dbo.[Employees]
+where YearsAtCompany > 10 )
+select * from Employee_CTE where MonthlyIncome > ( select Avg(MonthlyIncome) from dbo.[Employees]); 
+
+ select * from Employees
+
+
+ -- 12 . Write a CTE to find employees who have been in the company for more than 10 years and earn above the average salary.
+
+WITH Employee_CTE AS ( SELECT EmployeeNumber, Age, Department, YearsAtCompany, MonthlyIncome
+FROM dbo.[Employees]
+WHERE YearsAtCompany > 10 )
+
+SELECT * FROM Employee_CTE WHERE MonthlyIncome > ( SELECT Avg(MonthlyIncome) FROM dbo.[Employees]); 
+
+ SELECT * FROM Employees;
+
+ --13 Write a CTE to find employees who have worked for more than 5 years in the company and have a Job Level higher 
+ -- than the average Job Level of all employees.
+
+WITH Experienced_Employees 
+AS ( SELECT  EmployeeNumber, Age, Department, YearsAtCompany, MonthlyIncome, JobLevel from dbo. [Employees]
+    WHERE YearsAtCompany > 5
+)
+
+SELECT * FROM Experienced_Employees WHERE JobLevel > (SELECT AVG(JobLevel) FROM dbo.[Employees]);
+
+-- 14. Create a CTE to calculate the total number of employees in each department, 
+--- then select only those departments where employee count is more than 500.
+
+
+WITH Total_Employees AS (SELECT Count(*) AS TotEmployee, Department FROM dbo.[Employees] GROUP BY Department)
+
+SELECT * FROM  Total_Employees WHERE TotEmployee >500;
+
+
+-- 15  Create a CTE that calculates the total employees in each department, 
+-- then assign a RANK() based on the number of employees in descending order.
+
+WITH Total_Emp AS (SELECT Department,  Count(*) AS Num_of_Emp FROM dbo.[Employees] GROUP BY Department )
+
+SELECT Department, Num_of_Emp,  RANK() OVER(ORDER BY Num_of_Emp DESC ) AS Rank_of_Department FROM Total_Emp
+
+
+--16 Retrieve Total employee whose  MonthlyIncome is more than the average MonthlyIncome of their department using PARTITION BY.
+
+
+WITH Department_Income AS  (
+    SELECT EmployeeNumber, Department,  MonthlyIncome , AVG(MonthlyIncome) 
+    OVER (PARTITION BY Department )AS AvgDepartmentIncome FROM dbo.[Employees])
+
+SELECT Department , count(*) AS Total_Employee_with_Handsome_salary 
+FROM Department_Income WHERE MonthlyIncome > AvgDepartmentIncome GROUP BY Department;
+
+
+-- Advanced SQL Questions: 
+--17 Assign a rank to employees based on their MonthlyIncome in descending order for each department 
+--only for top 5 employees for each of the department.
+
+WITH Ranked_Employees  AS(
+    SELECT EmployeeNumber, Department, MonthlyIncome, RANK() OVER(PARTITION BY Department ORDER BY MonthlyIncome) AS Rank 
+    FROM dbo.[Employees]
+)
+SELECT * FROM Ranked_Employees
+where rank<=5;
+
+-- 18 Use DENSE_RANK() to rank employees by JobLevel in desc within each Department.
+WITH Ranked_Employee AS (
+    SELECT EmployeeNumber, Department , JobLevel, DENSE_RANK () OVER (PARTITION BY Department ORDER BY JobLevel DESC ) as Dense_Rank 
+    FROM dbo.[Employees]
+)
+
+SELECT * FROM Ranked_Employee
+
+--19. Use ROW_NUMBER() to assign a unique row number to employees in each department, ordered by YearsAtCompany in descending order.
+WITH Ranked_Employee AS (
+    SELECT Department, YearsAtCompany, 
+        ROW_NUMBER() OVER (PARTITION BY Department ORDER BY YearsAtCompany) as ROW_NUMBER
+    FROM dbo.[Employees])
+
+    Select * From Ranked_Employee where ROW_NUMBER <=4;
+
+--20: Find the second highest salary in each department using RANK().
+WITH Second_Highest_Salary AS (
+    SELECT EmployeeNumber, Department, MonthlyIncome,  
+           RANK() OVER (PARTITION BY Department ORDER BY MonthlyIncome DESC) AS rnk 
+    FROM dbo.[Employees]
+)
+SELECT * FROM Second_Highest_Salary WHERE rnk = 2;
+
+--21: Find the top 3 highest-paid employees in each department using RANK() or DENSE_RANK().
+WITH Highest_Paid_Emp AS (
+    SELECT EmployeeNumber, Department, MonthlyIncome, 
+        RANK() OVER (PARTITION BY Department ORDER BY MonthlyIncome DESC) AS rnk 
+    FROM dbo.[Employees]
+)
+
+SELECT * FROM Highest_Paid_Emp WHERE rnk <=3;
